@@ -1,4 +1,4 @@
-package com.example.vk_android_basics
+package com.example.vk_android_basics.presentation.viewmodel
 
 /**
  * Одноразовые события экрана, которые не должны дублироваться

@@ -1,4 +1,4 @@
-package com.example.vk_android_basics
+package com.example.vk_android_basics.presentation.view
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -24,21 +24,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.vk_android_basics.presentation.viewmodel.AppsUiEffect
+import com.example.vk_android_basics.presentation.viewmodel.AppsViewModel
+import com.example.vkandroidbasics.domain.model.AppEntity
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AppListScreen(
     onAppClick: (Int) -> Unit,
-    viewModel: AppsViewModel = viewModel() // Инициализация ViewModel презентационного слоя
+    viewModel: AppsViewModel // Принимаем инстанс из MainActivity
 ) {
-    // Подписываемся на состояние экрана (UI State) из ViewModel
     val state by viewModel.uiState.collectAsState()
-
-    // Состояние для управления показом Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Безопасный сбор одноразовых эффектов (Snackbar не сработает повторно при смене ориентации)
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
@@ -50,7 +48,6 @@ fun AppListScreen(
     }
 
     Scaffold(
-        // Интегрируем SnackbarHost в Scaffold для вывода уведомлений поверх интерфейса
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
@@ -72,54 +69,30 @@ fun AppListScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary),
-                // Обрабатываем клик по всему Тулбару через вызов метода во ViewModel
                 modifier = Modifier.clickable { viewModel.onToolbarClick() }
             )
         }
     ) { paddingValues ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
+            modifier = Modifier.fillMaxSize().padding(paddingValues),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // 1. Основной вертикальный список приложений (Практическое задание №4, Часть 1)
             items(state.mainAppsList, key = { it.id }) { app ->
                 AppListItem(app = app, onClick = onAppClick)
             }
 
-            // 2. Архитектурный блок «Витрина» (Практическое задание №4, Часть 2)
             item {
                 Spacer(modifier = Modifier.height(24.dp))
+                Text(text = "Витрина", fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
 
-                Text(
-                    text = "Витрина",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
-
-                // Состояние Pager, жестко ограниченное 3-мя страницами по условию ДЗ
                 val pagerState = rememberPagerState(pageCount = { 3 })
 
-                // Горизонтальный постраничный скролл
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxWidth(),
-                    pageSpacing = 16.dp
-                ) { page ->
-                    // Контейнер для отображения элементов внутри одной страницы Pager
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // Математическая нарезка: по 3 приложения на страницу (всего 9 приложений)
+                HorizontalPager(state = pagerState, modifier = Modifier.fillMaxWidth(), pageSpacing = 16.dp) { page ->
+                    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         val startIndex = page * 3
                         val pageApps = state.showcaseAppsList.drop(startIndex).take(3)
 
-                        // Отрисовываем элементы (верстка полностью переиспользуется)
                         for (app in pageApps) {
                             AppListItem(app = app, onClick = onAppClick)
                         }
@@ -131,31 +104,20 @@ fun AppListScreen(
 }
 
 @Composable
-fun AppListItem(app: AppInfo, onClick: (Int) -> Unit) {
+fun AppListItem(app: AppEntity, onClick: (Int) -> Unit) { // Заменили тип на AppEntity
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick(app.id) }, // Ссылка на экшен навигации
+        modifier = Modifier.fillMaxWidth().clickable { onClick(app.id) },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Image(
                 painter = painterResource(id = app.iconRes),
                 contentDescription = null,
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(8.dp)
+                modifier = Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp)
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = app.title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(text = app.title, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(text = app.description, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
                 Spacer(modifier = Modifier.height(8.dp))

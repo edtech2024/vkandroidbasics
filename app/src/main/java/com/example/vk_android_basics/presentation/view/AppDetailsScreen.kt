@@ -1,4 +1,4 @@
-package com.example.vk_android_basics
+package com.example.vk_android_basics.presentation.view
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -21,12 +21,23 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.example.vk_android_basics.presentation.viewmodel.AppsViewModel
+import com.example.vkandroidbasics.domain.model.AppEntity
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun AppDetailsScreen(appId: Int, onBackClick: () -> Unit, onShowcaseItemClick: () -> Unit) {
-    // Ищем приложение по его ID в обоих наших списках данных
-    val app = sampleAppsList.find { it.id == appId } ?: showcaseAppsList.find { it.id == appId }
+fun AppDetailsScreen(
+    appId: Int,
+    onBackClick: () -> Unit,
+    onShowcaseItemClick: () -> Unit,
+    viewModel: AppsViewModel // Передаем ViewModel для получения чистых данных
+) {
+    val state by viewModel.uiState.collectAsState()
+
+    // Ищем приложение внутри доменных списков из UI State
+    val app = state.mainAppsList.find { it.id == appId } ?: state.showcaseAppsList.find { it.id == appId }
 
     Scaffold(
         topBar = {
@@ -42,24 +53,16 @@ fun AppDetailsScreen(appId: Int, onBackClick: () -> Unit, onShowcaseItemClick: (
         }
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween // Разносит описание наверх, а витрину опускает в самый низ карточки
+            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // ВЕРХНИЙ БЛОК: Детальная карточка выбранного приложения
             if (app != null) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(
                             painter = painterResource(id = app.iconRes),
                             contentDescription = null,
-                            modifier = Modifier
-                                .size(72.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .padding(12.dp)
+                            modifier = Modifier.size(72.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(12.dp)
                         )
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
@@ -74,36 +77,17 @@ fun AppDetailsScreen(appId: Int, onBackClick: () -> Unit, onShowcaseItemClick: (
                 Text(text = "Приложение не найдено", fontSize = 18.sp)
             }
 
-            // НИЖНИЙ БЛОК: Витрина с горизонтальным постраничным скроллом
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-            ) {
-                Text(
-                    text = "Витрина",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+                Text(text = "Витрина", fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
 
-                // Инициализируем состояние пейджера ровно на 3 страницы (по условию ДЗ)
                 val pagerState = rememberPagerState(pageCount = { 3 })
 
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxWidth()
-                ) { page ->
-                    // Вычисляем срез данных: для каждой страницы берем по 3 приложения из 9 доступных
+                HorizontalPager(state = pagerState, modifier = Modifier.fillMaxWidth()) { page ->
                     val startIndex = page * 3
-                    val pageApps = showcaseAppsList.subList(startIndex, startIndex + 3)
+                    val pageApps = state.showcaseAppsList.drop(startIndex).take(3)
 
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         pageApps.forEach { showcaseApp ->
-                            // Переиспользуем верстку элемента, вешая клик возврата на главный список
                             ShowcaseItemRow(app = showcaseApp, onClick = onShowcaseItemClick)
                         }
                     }
@@ -111,20 +95,10 @@ fun AppDetailsScreen(appId: Int, onBackClick: () -> Unit, onShowcaseItemClick: (
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Индикаторы страниц (точки) под витриной
-                Row(
-                    Modifier.fillMaxWidth().height(8.dp),
-                    horizontalArrangement = Arrangement.Center
-                ) {
+                Row(Modifier.fillMaxWidth().height(8.dp), horizontalArrangement = Arrangement.Center) {
                     repeat(3) { iteration ->
                         val color = if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else Color.LightGray
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = 4.dp)
-                                .clip(CircleShape)
-                                .background(color)
-                                .size(8.dp)
-                        )
+                        Box(modifier = Modifier.padding(horizontal = 4.dp).clip(CircleShape).background(color).size(8.dp))
                     }
                 }
             }
@@ -132,29 +106,17 @@ fun AppDetailsScreen(appId: Int, onBackClick: () -> Unit, onShowcaseItemClick: (
     }
 }
 
-// Переиспользуемая компактная верстка элемента для витрины
 @Composable
-fun ShowcaseItemRow(app: AppInfo, onClick: () -> Unit) {
+fun ShowcaseItemRow(app: AppEntity, onClick: () -> Unit) { // Изменили тип на AppEntity
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }, // По клику возвращает на главный список
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Image(
                 painter = painterResource(id = app.iconRes),
                 contentDescription = null,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(6.dp)
+                modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant).padding(6.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {

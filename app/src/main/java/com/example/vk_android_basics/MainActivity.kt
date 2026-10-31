@@ -10,50 +10,71 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.vk_android_basics.presentation.view.AppDetailsScreen
+import com.example.vk_android_basics.presentation.view.AppListScreen
+import androidx.activity.viewModels
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.edtech2024.vkandroidbasics.data.datasource.HardcodedAppDataSource
+import com.example.vk_android_basics.presentation.viewmodel.AppsViewModel
+import com.example.vkandroidbasics.data.mapper.AppMapper
+import com.example.vkandroidbasics.data.repository.AppRepositoryImpl
+import com.example.vkandroidbasics.domain.usecase.GetAppsUseCase
 
 class MainActivity : ComponentActivity() {
+
+    // Сборка зависимостей Clean Architecture вручную через Factory
+    private val appsViewModel: AppsViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val dataSource = HardcodedAppDataSource()
+                val mapper = AppMapper()
+                val repository = AppRepositoryImpl(dataSource, mapper)
+                val useCase = GetAppsUseCase(repository)
+
+                @Suppress("UNCHECKED_CAST")
+                return AppsViewModel(useCase) as T
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    // Создаем контроллер навигации
                     val navController = rememberNavController()
 
-                    // Инициализируем граф навигации. Стартовая точка — главный список "apps_list"
                     NavHost(
                         navController = navController,
                         startDestination = "apps_list"
                     ) {
-                        // ЭКРАН 1: Главный список приложений
                         composable("apps_list") {
-                            AppListScreen(onAppClick = { appId ->
-                                // При клике на карточку летим на экран деталей и передаем ID приложения
-                                navController.navigate("app_details/$appId")
-                            })
+                            AppListScreen(
+                                onAppClick = { appId ->
+                                    navController.navigate("app_details/$appId")
+                                },
+                                viewModel = appsViewModel // Прокидываем готовую ViewModel
+                            )
                         }
 
-                        // ЭКРАН 2: Карточка приложения (Детали + горизонтальная «Витрина»)
                         composable(
                             route = "app_details/{appId}",
                             arguments = listOf(navArgument("appId") { type = NavType.IntType })
                         ) { backStackEntry ->
-                            // Извлекаем переданный ID приложения
                             val appId = backStackEntry.arguments?.getInt("appId") ?: 0
 
                             AppDetailsScreen(
                                 appId = appId,
                                 onBackClick = {
-                                    // Клик по стрелке «Назад» в тулбаре возвращает на прошлый экран
                                     navController.popBackStack()
                                 },
                                 onShowcaseItemClick = {
-                                    // Клик на ЛЮБОЕ приложение из блока «Витрина» возвращает на главный список
                                     navController.navigate("apps_list") {
-                                        // Очищаем стек, чтобы экраны не бесконечно копились друг на друге
                                         popUpTo("apps_list") { inclusive = true }
                                     }
-                                }
+                                },
+                                viewModel = appsViewModel // Прокидываем ту же самую ViewModel
                             )
                         }
                     }

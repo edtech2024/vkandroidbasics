@@ -9,6 +9,7 @@ import com.example.vkandroidbasics.domain.model.AppEntity
 data class AppsListUiState(
     val mainAppsList: List<AppEntity> = emptyList(),
     val showcaseAppsList: List<AppEntity> = emptyList(),
-    val isLoading: Boolean = false
+    val selectedApp: AppEntity? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null
 )
-

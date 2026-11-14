@@ -20,11 +20,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.example.vk_android_basics.presentation.viewmodel.AppsUiEffect
 import com.example.vk_android_basics.presentation.viewmodel.AppsViewModel
 import com.example.vkandroidbasics.domain.model.AppEntity
@@ -32,7 +34,7 @@ import com.example.vkandroidbasics.domain.model.AppEntity
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AppListScreen(
-    onAppClick: (Int) -> Unit,
+    onAppClick: (String) -> Unit,
     viewModel: AppsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -74,28 +76,56 @@ fun AppListScreen(
             )
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(state.mainAppsList, key = { it.id }) { app ->
-                AppListItem(app = app, onClick = onAppClick)
+        when {
+            state.isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
             }
+            state.error != null -> {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = state.error ?: "Ошибка сети", color = MaterialTheme.colorScheme.error)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(onClick = { viewModel.loadData() }) {
+                        Text(text = "Повторить")
+                    }
+                }
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(paddingValues),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(state.mainAppsList, key = { it.id }) { app ->
+                        AppListItem(app = app, onClick = onAppClick)
+                    }
 
-            item {
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(text = "Витрина", fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
+                    if (state.showcaseAppsList.isNotEmpty()) {
+                        item {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Text(text = "Витрина", fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
 
-                val pagerState = rememberPagerState(pageCount = { 3 })
+                            val pageCount = (state.showcaseAppsList.size + 2) / 3
+                            val pagerState = rememberPagerState(pageCount = { pageCount })
 
-                HorizontalPager(state = pagerState, modifier = Modifier.fillMaxWidth(), pageSpacing = 16.dp) { page ->
-                    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        val startIndex = page * 3
-                        val pageApps = state.showcaseAppsList.drop(startIndex).take(3)
+                            HorizontalPager(state = pagerState, modifier = Modifier.fillMaxWidth(), pageSpacing = 16.dp) { page ->
+                                Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    val startIndex = page * 3
+                                    val pageApps = state.showcaseAppsList.drop(startIndex).take(3)
 
-                        for (app in pageApps) {
-                            AppListItem(app = app, onClick = onAppClick)
+                                    for (app in pageApps) {
+                                        AppListItem(app = app, onClick = onAppClick)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -105,16 +135,22 @@ fun AppListScreen(
 }
 
 @Composable
-fun AppListItem(app: AppEntity, onClick: (Int) -> Unit) {
+fun AppListItem(app: AppEntity, onClick: (String) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick(app.id) },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(id = app.iconRes),
-                contentDescription = null,
-                modifier = Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp)
+            AsyncImage(
+                model = app.iconUrl,
+                contentDescription = app.title,
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(id = android.R.drawable.sym_def_app_icon),
+                error = painterResource(id = android.R.drawable.sym_def_app_icon),
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {

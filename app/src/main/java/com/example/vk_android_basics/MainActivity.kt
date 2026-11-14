@@ -38,9 +38,9 @@ class MainActivity : ComponentActivity() {
 
                         composable(
                             route = "app_details/{appId}",
-                            arguments = listOf(navArgument("appId") { type = NavType.IntType })
+                            arguments = listOf(navArgument("appId") { type = NavType.StringType })
                         ) { backStackEntry ->
-                            val appId = backStackEntry.arguments?.getInt("appId") ?: 0
+                            val appId = backStackEntry.arguments?.getString("appId").orEmpty()
 
                             AppDetailsScreen(
                                 appId = appId,

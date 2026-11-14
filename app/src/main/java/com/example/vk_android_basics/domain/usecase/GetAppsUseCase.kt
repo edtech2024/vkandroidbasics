@@ -7,12 +7,11 @@ import javax.inject.Inject
 class GetAppsUseCase @Inject constructor(
     private val repository: AppRepository
 ) {
-
-    fun getMainList(): List<AppEntity> {
-        return repository.getMainApps()
+    suspend fun getCatalog(): List<AppEntity> {
+        return repository.getCatalog()
     }
 
-    fun getShowcaseList(): List<AppEntity> {
-        return repository.getShowcaseApps()
+    suspend fun getAppById(id: String): AppEntity {
+        return repository.getAppById(id)
     }
 }

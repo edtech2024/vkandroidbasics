@@ -7,11 +7,11 @@ import javax.inject.Inject
 class AppMapper @Inject constructor() {
     fun mapDtoToEntity(dto: AppDto): AppEntity {
         return AppEntity(
-            id = dto.id ?: 0,
-            title = dto.title ?: "Без названия",
-            description = dto.description ?: "",
+            id = dto.id.orEmpty(),
+            title = dto.name ?: "Без названия",
+            description = dto.description.orEmpty(),
             category = dto.category ?: "Разное",
-            iconRes = dto.iconRes ?: android.R.drawable.sym_def_app_icon
+            iconUrl = dto.iconUrl.orEmpty()
         )
     }
 }

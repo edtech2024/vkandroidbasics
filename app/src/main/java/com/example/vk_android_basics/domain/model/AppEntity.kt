@@ -1,10 +1,9 @@
 package com.example.vkandroidbasics.domain.model
 
 data class AppEntity(
-    val id: Int,
+    val id: String,
     val title: String,
     val description: String,
     val category: String,
-    val iconRes: Int
+    val iconUrl: String
 )
-

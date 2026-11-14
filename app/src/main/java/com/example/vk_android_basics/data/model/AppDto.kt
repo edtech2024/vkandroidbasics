@@ -1,9 +1,16 @@
 package com.example.vkandroidbasics.data.model
 
+import com.google.gson.annotations.SerializedName
+
 data class AppDto(
-    val id: Int?,
-    val title: String?,
-    val description: String?,
-    val category: String?,
-    val iconRes: Int?
+    @SerializedName("id")
+    val id: String? = null,
+    @SerializedName("name")
+    val name: String? = null,
+    @SerializedName("description")
+    val description: String? = null,
+    @SerializedName("category")
+    val category: String? = null,
+    @SerializedName("iconUrl")
+    val iconUrl: String? = null
 )

@@ -13,6 +13,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,8 +23,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.vk_android_basics.presentation.viewmodel.AppsViewModel
 import com.example.vkandroidbasics.domain.model.AppEntity
 
@@ -32,11 +33,10 @@ fun AppDetailsScreen(
     appId: Int,
     onBackClick: () -> Unit,
     onShowcaseItemClick: () -> Unit,
-    viewModel: AppsViewModel // Передаем ViewModel для получения чистых данных
+    viewModel: AppsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    // Ищем приложение внутри доменных списков из UI State
     val app = state.mainAppsList.find { it.id == appId } ?: state.showcaseAppsList.find { it.id == appId }
 
     Scaffold(
@@ -107,7 +107,7 @@ fun AppDetailsScreen(
 }
 
 @Composable
-fun ShowcaseItemRow(app: AppEntity, onClick: () -> Unit) { // Изменили тип на AppEntity
+fun ShowcaseItemRow(app: AppEntity, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)

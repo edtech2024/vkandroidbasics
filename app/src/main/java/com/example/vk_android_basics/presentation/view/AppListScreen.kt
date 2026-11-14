@@ -24,6 +24,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.vk_android_basics.presentation.viewmodel.AppsUiEffect
 import com.example.vk_android_basics.presentation.viewmodel.AppsViewModel
 import com.example.vkandroidbasics.domain.model.AppEntity
@@ -32,7 +33,7 @@ import com.example.vkandroidbasics.domain.model.AppEntity
 @Composable
 fun AppListScreen(
     onAppClick: (Int) -> Unit,
-    viewModel: AppsViewModel // Принимаем инстанс из MainActivity
+    viewModel: AppsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -104,7 +105,7 @@ fun AppListScreen(
 }
 
 @Composable
-fun AppListItem(app: AppEntity, onClick: (Int) -> Unit) { // Заменили тип на AppEntity
+fun AppListItem(app: AppEntity, onClick: (Int) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick(app.id) },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)

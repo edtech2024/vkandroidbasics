@@ -2,8 +2,9 @@ package com.edtech2024.vkandroidbasics.data.datasource
 
 import android.R
 import com.example.vkandroidbasics.data.model.AppDto
+import javax.inject.Inject
 
-class HardcodedAppDataSource {
+class HardcodedAppDataSource @Inject constructor() {
 
     fun getMainApps(): List<AppDto> {
         return listOf(

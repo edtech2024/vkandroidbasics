@@ -4,8 +4,9 @@ import com.edtech2024.vkandroidbasics.data.datasource.HardcodedAppDataSource
 import com.example.vkandroidbasics.data.mapper.AppMapper
 import com.example.vkandroidbasics.domain.model.AppEntity
 import com.example.vkandroidbasics.domain.repository.AppRepository
+import javax.inject.Inject
 
-class AppRepositoryImpl(
+class AppRepositoryImpl @Inject constructor(
     private val dataSource: HardcodedAppDataSource,
     private val mapper: AppMapper
 ) : AppRepository {

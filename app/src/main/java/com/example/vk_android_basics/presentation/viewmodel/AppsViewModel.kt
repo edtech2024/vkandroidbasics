@@ -2,15 +2,20 @@ package com.example.vk_android_basics.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.vkandroidbasics.domain.usecase.GetAppsUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import com.example.vkandroidbasics.domain.usecase.GetAppsUseCase
+import javax.inject.Inject
 
-class AppsViewModel(private val getAppsUseCase: GetAppsUseCase) : ViewModel() {
+@HiltViewModel
+class AppsViewModel @Inject constructor(
+    private val getAppsUseCase: GetAppsUseCase
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AppsListUiState())
     val uiState: StateFlow<AppsListUiState> = _uiState.asStateFlow()

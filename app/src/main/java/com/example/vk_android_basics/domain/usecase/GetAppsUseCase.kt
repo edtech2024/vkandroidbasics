@@ -2,8 +2,11 @@ package com.example.vkandroidbasics.domain.usecase
 
 import com.example.vkandroidbasics.domain.model.AppEntity
 import com.example.vkandroidbasics.domain.repository.AppRepository
+import javax.inject.Inject
 
-class GetAppsUseCase(private val repository: AppRepository) {
+class GetAppsUseCase @Inject constructor(
+    private val repository: AppRepository
+) {
 
     fun getMainList(): List<AppEntity> {
         return repository.getMainApps()
@@ -13,4 +16,3 @@ class GetAppsUseCase(private val repository: AppRepository) {
         return repository.getShowcaseApps()
     }
 }
-

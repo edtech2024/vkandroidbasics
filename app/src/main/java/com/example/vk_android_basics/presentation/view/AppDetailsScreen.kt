@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.vk_android_basics.presentation.viewmodel.AppsViewModel
+import com.example.vk_android_basics.presentation.viewmodel.InstallState
 import com.example.vkandroidbasics.domain.model.AppEntity
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -90,6 +91,41 @@ fun AppDetailsScreen(
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(text = app.description, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Кнопка установки с прогрессом и отменой (Задание 9.1)
+                        val installState = state.installState
+                        Button(
+                            onClick = { viewModel.onInstallClick() },
+                            enabled = installState !is InstallState.Installed,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (installState is InstallState.Installing) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.primary
+                                }
+                            )
+                        ) {
+                            Text(
+                                text = when (installState) {
+                                    is InstallState.NotInstalled -> "Установить"
+                                    is InstallState.Installing -> "Отменить (${installState.progress}%)"
+                                    is InstallState.Installed -> "Установлено"
+                                },
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        if (installState is InstallState.Installing) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                progress = { installState.progress / 100f },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
                 }
                 else -> {

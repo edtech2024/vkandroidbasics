@@ -5,4 +5,6 @@ import com.example.vkandroidbasics.domain.model.AppEntity
 interface AppRepository {
     suspend fun getCatalog(): List<AppEntity>
     suspend fun getAppById(id: String): AppEntity
+    suspend fun loadRatingsSequentially(ids: List<String>): Map<String, Float>
+    suspend fun loadRatingsInParallel(ids: List<String>): Map<String, Float>
 }

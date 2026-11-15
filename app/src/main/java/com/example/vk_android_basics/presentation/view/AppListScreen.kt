@@ -10,6 +10,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -105,7 +107,11 @@ fun AppListScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(state.mainAppsList, key = { it.id }) { app ->
-                        AppListItem(app = app, onClick = onAppClick)
+                        AppListItem(
+                            app = app,
+                            rating = state.ratings[app.id],
+                            onClick = onAppClick
+                        )
                     }
 
                     if (state.showcaseAppsList.isNotEmpty()) {
@@ -122,7 +128,11 @@ fun AppListScreen(
                                     val pageApps = state.showcaseAppsList.drop(startIndex).take(3)
 
                                     for (app in pageApps) {
-                                        AppListItem(app = app, onClick = onAppClick)
+                                        AppListItem(
+                                            app = app,
+                                            rating = state.ratings[app.id],
+                                            onClick = onAppClick
+                                        )
                                     }
                                 }
                             }
@@ -135,7 +145,11 @@ fun AppListScreen(
 }
 
 @Composable
-fun AppListItem(app: AppEntity, onClick: (String) -> Unit) {
+fun AppListItem(
+    app: AppEntity,
+    rating: Float? = null,
+    onClick: (String) -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick(app.id) },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -154,7 +168,34 @@ fun AppListItem(app: AppEntity, onClick: (String) -> Unit) {
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = app.title, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = app.title,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (rating != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = "Рейтинг",
+                                tint = Color(0xFFFFB300),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = rating.toString(),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(text = app.description, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
                 Spacer(modifier = Modifier.height(8.dp))

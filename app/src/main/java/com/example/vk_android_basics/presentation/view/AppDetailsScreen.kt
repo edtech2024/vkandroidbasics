@@ -1,0 +1,193 @@
+package com.example.vk_android_basics.presentation.view
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.example.vk_android_basics.presentation.viewmodel.AppsViewModel
+import com.example.vk_android_basics.presentation.viewmodel.InstallState
+import com.example.vkandroidbasics.domain.model.AppEntity
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@Composable
+fun AppDetailsScreen(
+    appId: String,
+    onBackClick: () -> Unit,
+    onShowcaseItemClick: () -> Unit,
+    viewModel: AppsViewModel = hiltViewModel()
+) {
+    val state by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(appId) {
+        viewModel.loadAppDetails(appId)
+    }
+
+    val app = state.selectedApp
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = app?.title ?: "Детали", color = Color.White, fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад", tint = Color.White)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary)
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            when {
+                state.isLoading && app == null -> {
+                    Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+                app != null -> {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            AsyncImage(
+                                model = app.iconUrl,
+                                contentDescription = app.title,
+                                contentScale = ContentScale.Crop,
+                                placeholder = painterResource(id = android.R.drawable.sym_def_app_icon),
+                                error = painterResource(id = android.R.drawable.sym_def_app_icon),
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text(text = app.title, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                                Text(text = app.category, color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(text = app.description, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Кнопка установки с прогрессом и отменой (Задание 9.1)
+                        val installState = state.installState
+                        Button(
+                            onClick = { viewModel.onInstallClick() },
+                            enabled = installState !is InstallState.Installed,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (installState is InstallState.Installing) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.primary
+                                }
+                            )
+                        ) {
+                            Text(
+                                text = when (installState) {
+                                    is InstallState.NotInstalled -> "Установить"
+                                    is InstallState.Installing -> "Отменить (${installState.progress}%)"
+                                    is InstallState.Installed -> "Установлено"
+                                },
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        if (installState is InstallState.Installing) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                progress = { installState.progress / 100f },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+                else -> {
+                    Text(text = state.error ?: "Приложение не найдено", fontSize = 18.sp)
+                }
+            }
+
+            if (state.showcaseAppsList.isNotEmpty()) {
+                Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+                    Text(text = "Витрина", fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+
+                    val pageCount = (state.showcaseAppsList.size + 2) / 3
+                    val pagerState = rememberPagerState(pageCount = { pageCount })
+
+                    HorizontalPager(state = pagerState, modifier = Modifier.fillMaxWidth()) { page ->
+                        val startIndex = page * 3
+                        val pageApps = state.showcaseAppsList.drop(startIndex).take(3)
+
+                        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            pageApps.forEach { showcaseApp ->
+                                ShowcaseItemRow(app = showcaseApp, onClick = onShowcaseItemClick)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(Modifier.fillMaxWidth().height(8.dp), horizontalArrangement = Arrangement.Center) {
+                        repeat(pageCount) { iteration ->
+                            val color = if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else Color.LightGray
+                            Box(modifier = Modifier.padding(horizontal = 4.dp).clip(CircleShape).background(color).size(8.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ShowcaseItemRow(app: AppEntity, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            AsyncImage(
+                model = app.iconUrl,
+                contentDescription = app.title,
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(id = android.R.drawable.sym_def_app_icon),
+                error = painterResource(id = android.R.drawable.sym_def_app_icon),
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = app.title, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(text = app.category, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
